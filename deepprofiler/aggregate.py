@@ -35,6 +35,8 @@ def store_source_parquet(input_dir):
         if not os.path.exists(input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}"):
             os.makedirs(input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}")
         for plate in plates:
+            if not os.path.exists(input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}/{plate}"):
+                os.makedirs(input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}/{plate}")
             well_dir_input = input_dir + f"/embeddings/Cell_Painting_CNN_conv6a_b3667957/{batch}/{plate}"
-            well_dir_output = input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}"
+            well_dir_output = input_dir + f"/profiles/Cell_Painting_CNN_conv6a_b3667957/{batch}/{plate}"
             well_level_parquet(data_path =well_dir_input, output_dir= well_dir_output)
