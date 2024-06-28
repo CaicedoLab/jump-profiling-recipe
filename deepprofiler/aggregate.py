@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
-
+from tqdm import tqdm
 
 '''
 Function used to get the well level aggregated statistics
@@ -9,14 +9,22 @@ Function used to get the well level aggregated statistics
 
 def well_level_parquet(data_path, output_dir):
     plate_name = data_path.split("/")[-1]
-    print(plate_name)
     files = os.listdir(data_path)
     all_data = pd.DataFrame()
-    for file in files:
-        data = pd.read_parquet(os.path.join(data_path, file, "embedding.parquet"))
-        all_data = pd.concat([all_data, data])
-    all_data = all_data.groupby(["source", "batch", "plate", "well"]).mean().reset_index()
-    all_data.to_parquet(os.path.join(output_dir, f"{plate_name}.parquet"), index=False)
+    errors = False
+    for file in tqdm(files, desc=plate_name):
+        try:
+            data = pd.read_parquet(os.path.join(data_path, file, "embedding.parquet"))
+            all_data = pd.concat([all_data, data])
+        except:
+            print("Error with",os.path.join(data_path, file, "embedding.parquet"))
+            errors = True
+            break
+    if not errors:
+        all_data = all_data.groupby(["source", "batch", "plate", "well"])["all_emb"].mean().reset_index()
+        all_data.to_parquet(os.path.join(output_dir, f"{plate_name}.parquet"), index=False)
+    else:
+        print("Skipping plate",plate_name)
 
 
 '''
