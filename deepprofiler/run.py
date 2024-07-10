@@ -1,6 +1,7 @@
 import os
 import sys
 import aggregate
+import subprocess
 
 if len(sys.argv) < 3:
     print("Use: run.py src_dir work_dir")
@@ -16,22 +17,29 @@ workdir = sys.argv[2]
 
 all_zips = [x for x in os.listdir(srcdir) if x.endswith(".zip")]
 
-'''
-Function to move the data from long-term storage to a local working directory
-'''
-def prepare_data(src):
-    src_zips = [x for x in all_zips if x.startswith(src)]
 
-    for z in src_zips:
-        os.system(f"cp {srcdir}/{z} {workdir} && cd {workdir} && unzip {z} && rm {z} &")
-        print(z)
-
+'''
+Wait until a number of zip files are transferred and uncompressed
+'''
+def wait(workdir, max_items):
     remaining = len([x for x in os.listdir(workdir) if x.endswith(".zip")])
-    while remaining > 0:
+    while remaining > max_items:
         print("Waiting for",remaining,"files to be uncompressed")
         os.system("sleep 10")
         remaining = len([x for x in os.listdir(workdir) if x.endswith(".zip")])
 
+
+'''
+Function to move the data from long-term storage to a local working directory
+'''
+def prepare_data(src, max_parallel_files=20):
+    src_zips = [x for x in all_zips if x.startswith(src+"_")]
+
+    for z in src_zips:
+        os.system(f"cp {srcdir}/{z} {workdir} && cd {workdir} && unzip {z} && rm {z} &")
+        wait(workdir, max_parallel_files)
+
+    wait(workdir, 0)
     print("Data ready for processing")
 
 '''
@@ -53,13 +61,19 @@ def fix_paths(root):
 Main loop
 '''
 sources = set([x.split("_")[0] for x in os.listdir(srcdir) if x.startswith("source")])
+sources = list(sources)
+sources.sort()
+print(sources)
 
-for src in ["source2"]:
-    #prepare_data(src)
-    #fix_paths(f"{workdir}/cpg0016-jump/")
+for src in ['source10', 'source2', 'source3', 'source4', 'source5', 'source6', 'source7', 'source8', 'source9']:
+    prepare_data(src)
+    fix_paths(f"{workdir}/cpg0016-jump/")
     sn = int(src.replace("source",""))
     aggregate.store_source_parquet(f"{workdir}/cpg0016-jump/source_{sn}/workspace_dl/")
 
+    ## TODO:
+    ## zip each plate separately and move it back to the storage system
+    os.system(f"rm -Rf {workdir}/cpg0016-jump/source_{sn}/")
 
-## TODO:
-## zip each plate separately and move it back to the storage system
+
+
